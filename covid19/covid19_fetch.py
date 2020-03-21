@@ -24,10 +24,6 @@ step = datetime.timedelta(hours=24)
 region = "US"
 #region = "China"
 
-daily_confirmed = 0
-daily_deaths = 0
-daily_recovered = 0
-
 data_out = {}
 with open(filepath, "r+") as file:
     try:
@@ -35,6 +31,10 @@ with open(filepath, "r+") as file:
     except:
         print("No JSON data found")
     while dt < end:
+        daily_confirmed = 0
+        daily_deaths = 0
+        daily_recovered = 0
+
 	date = dt.strftime('%m-%d-%Y')
         if date in data_out.keys():
             print("data found for "+date)
@@ -43,7 +43,7 @@ with open(filepath, "r+") as file:
 	    response = urllib2.urlopen(url+'/'+date)
 	    data_in = json.load(response)   
 	    for d in data_in:
-		if(region in d['countryRegion']):
+		if(region == d['countryRegion']):
 		    try: 
 			daily_confirmed+=int(d['confirmed'])
 		    except ValueError:
