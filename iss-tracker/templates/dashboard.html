@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="Data Visualization Dashboard">
+    <meta name="author" content="ACROBOTIC">
+    <title>ISS Tracking Dashboard</title>
+    <!-- Fonts -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <style>
+      .row {
+        margin:0 !important;
+      }
+      .container {
+        max-width: 960px;
+      }
+      .dashboard-header {
+        max-width: 700px;
+      }
+      .card-deck .card {
+        min-width: 220px;
+      }
+      input[type=number]::-webkit-inner-spin-button, 
+      input[type=number]::-webkit-outer-spin-button { 
+          -webkit-appearance: none;
+          -moz-appearance: none;
+          appearance: none;
+          margin: 0; 
+      }
+    </style>
+    <!-- User location -->
+    <script type="text/javascript">
+      var obs_lat = 34.138760;
+      var obs_lon = -118.070156;
+      var is_overhead = false;
+    </script>
+    <!-- ------------- -->
+  </head>
+  <body>
+    <div class="dashboard-header px-3 py-3 pt-sm-6 pb-md-4 mx-auto text-center">
+      <h1 class="">International Space Station</h1>
+    </div>
+    <div class="container">
+      <div class="mx-auto mb-3 text-center">
+        <form class="form-inline">
+              <label class="col-sm-2 col-form-label col-form-label-lg" for="input-lat">Latitude: </label>
+              <input type="number" class="form-control col-sm-2 mb-2 mr-1" id="input-lat" placeholder="34.138760">
+              <label class="col-sm-2 col-form-label col-form-label-lg" for="input-lon">Longitude: </label>
+              <input type="number" class="form-control col-sm-2 mb-2 mr-3" id="input-lon" placeholder="-118.07015">
+              <button type="button" class="btn btn-info mb-2" onclick="updateLatLon()">Update</button>
+        </form>        
+      </div>
+      <div class="card-deck mb-3 text-center">
+        <div class="card mb-4 box-shadow">
+          <div class="card-header">
+            <h4 class="my-0 font-weight-normal">Mission Control</h4>
+          </div>
+          <div class="card-body">
+            <h1 class="card-title text-info">Tracking</h1>
+            <table class="table mt-2">
+              <thead class="thead-light"><th colspan="2">Speed</th></thead>
+              <tr>
+                <td colspan="2"><span id="speed"></span>4.75 miles/second</td>
+              </tr>
+              <thead class="thead-light"><th colspan="2">Location</th></thead>
+              <tr>
+                <td>
+                  <strong>lat: </strong><span id="iss-lat"></span>
+                </td>
+                <td>
+                  <strong>lon: </strong><span id="iss-lon"></span>
+                </td>
+              </tr>
+              <thead class="thead-light"><th colspan="2">Altitude</th></thead>
+              <tr>
+                <td colspan="2"><span id="speed"></span>273.94 miles</td>
+              </tr>
+            </table>
+          </div>
+        </div>
+        <div class="card mb-4 box-shadow">
+          <div class="card-header">
+            <h4 class="my-0 font-weight-normal">Next Pass</h4>
+          </div>
+          <div class="card-body">
+            <h1 id="next-pass" class="card-title text-info"> 
+            </h1>
+            <table class="table mt-0">
+              <thead class="thead-light"><th colspan="2">Duration</th></thead>
+              <tr>
+                <td colspan="2"><span id="duration"></span> seconds</td>
+              </tr>
+              <thead class="thead-light"><th colspan="2">Ground Station</th></thead>
+              <tbody>
+              <tr>
+                <td>
+                  <strong>lat: </strong><span id="obs-lat"></span>
+                </td>
+                <td>
+                  <strong>lon: </strong><span id="obs-lon"></span>
+                </td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card mb-4 box-shadow">
+          <div class="card-header">
+            <h4 class="my-0 font-weight-normal">Crew</h4>
+          </div>
+          <div class="card-body">
+            <h1 id="crew" class="card-title text-info"> 
+              <span id='crew-number'></span>
+            </h1>
+            <table class="table table-striped mt-0">
+              <tbody id='crew-names'>
+              </tbody>
+            </table>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src='http://code.jquery.com/jquery-2.0.3.min.js'> </script>
+    <script type="text/javascript">
+      String.prototype.toSeconds = function () { 
+        if (!this) return null; 
+        var hms = this.split(':');
+        return (+hms[0]) * 60 * 60 + (+hms[1]) * 60 + (+hms[2] || 0); 
+      }
+
+      function updateLatLon() {
+        var input_lat = document.getElementById("input-lat").value;
+        var input_lon = document.getElementById("input-lon").value;
+
+        var reg_lat = new RegExp("^(\\+|-)?(?:90(?:(?:\\.0{1,6})?)|(?:[0-9]|[1-8][0-9])(?:(?:\\.[0-9]{1,6})?))$");
+        var reg_lon = new RegExp("^(\\+|-)?(?:180(?:(?:\\.0{1,6})?)|(?:[0-9]|[1-9][0-9]|1[0-7][0-9])(?:(?:\\.[0-9]{1,6})?))$");
+
+        if(reg_lat.exec(input_lat) && reg_lon.exec(input_lon)) {
+          obs_lat = parseFloat(input_lat);
+          obs_lon = parseFloat(input_lon);
+          $('#obs-lat').html(obs_lat.toFixed(4));
+          $('#obs-lon').html(obs_lon.toFixed(4));
+        } else {
+          //error
+          alert("BAD COORDINATES!");
+        }        
+      }
+
+      function updateNextPass(t) {
+        var next_pass = $('#next-pass').data("next_pass");
+        var duration = $('#duration').text();
+        next_pass -= 1;
+        next_pass_obj = {'next_pass':next_pass};
+        $('#next-pass').data(next_pass_obj);
+        $.ajax({
+          type: 'POST',
+          contentType: 'application/json; charset=utf-8',
+          url: '/status',
+          data: JSON.stringify(next_pass_obj),
+          success: function (data) {
+            console.log(data);
+          },
+          dataType: 'json'
+        });        
+        if(next_pass > 0) {
+          var date = new Date(null);
+          date.setSeconds(next_pass); // specify value for SECONDS here
+          var result = date.toISOString().substr(11, 8);
+          $('#next-pass').html(result);
+        } else if(next_pass > -duration) {
+          is_overhead = true;
+          $('#next-pass').html("00:00:00");
+          if(next_pass%2==0)
+            $('#next-pass').css("background-color", "cyan");
+          else
+            $('#next-pass').css("background-color", "white");
+        } else {
+          is_overhead = false;
+          $('#next-pass').css("background-color", "white");
+        }
+        setTimeout(function() { 
+          updateNextPass(t);
+        }, t);
+      }
+
+      // Navigation & next pass data
+      function getNextPass(t) {
+        var url_data = 'http://api.open-notify.org/iss-pass.json?';
+        url_data += 'lat='+obs_lat;
+        url_data += '&lon='+obs_lon;
+        url_data += '&callback=?';
+        $.getJSON(url_data, function(data) {
+          var time_now = data['request']['datetime'];
+          var time_pass = data['response'][0]['risetime'];
+          var time_diff = time_pass-time_now;
+          var date = new Date(null)
+          date.setSeconds(time_diff); // specify value for SECONDS here
+          var result = date.toISOString().substr(11, 8);
+          $('#next-pass').data({"next_pass":time_diff});
+          $('#next-pass').html(result);
+          $('#duration').html(data['response'][0]['duration']);
+        });
+        if(is_overhead == false) {
+          setTimeout(function() { 
+            getNextPass(t);
+          }, t);
+        }
+      }
+
+      // Position data
+      function getPositionData(t) {
+        $.getJSON('http://api.open-notify.org/iss-now.json', function(data) {
+          let iss_lat = data['iss_position']['latitude'];
+          $('#iss-lat').html(iss_lat);
+          let iss_lon = data['iss_position']['longitude'];
+          $('#iss-lon').html(iss_lon);
+        });
+        setTimeout(function() { 
+          getPositionData(t);
+        }, t);
+      }
+
+      // Crew data
+      function getCrewData(t) {
+        $.getJSON('http://api.open-notify.org/astros.json', function(data) {
+          $('#crew-number').html(data['number']);
+          $('#crew-names').html('');
+          for(const p of data['people']) {
+            $('#crew-names').append('<tr><td>'+p['name']+'</td></tr>');
+          }
+        });
+        setTimeout(function() { 
+          getCrewData(t);
+        }, t);
+      }
+
+      $(document).ready(function() {
+        getNextPass(1000);
+        updateNextPass(5000);
+        getPositionData(5000);
+        getCrewData(24*60*60*1000);
+        $('#obs-lat').html(obs_lat.toFixed(4));
+        $('#obs-lon').html(obs_lon.toFixed(4));
+      });
+    </script>
+  </body>
+</html>
