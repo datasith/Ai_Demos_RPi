@@ -5,7 +5,6 @@ YDLIDAR X4 data
 '''
 # Make the standard library 'play nicely'
 from gevent import monkey
-import time
 monkey.patch_all()
 connections = 0;
 
